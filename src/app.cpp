@@ -101,6 +101,8 @@ int main(int, char**)
     ImVec4 sliderColor = ImVec4(0.55f, 0.75f, 0.60f, 1.00f);
     ImVec4 viewPortBackgroundColor = ImVec4(0.55f, 0.75f, 0.60f, 1.00f);
 
+    ImU32 rectangleColor = IM_COL32(255, 0, 0, 255);
+
     // Main loop
     MSG msg;
     ZeroMemory(&msg, sizeof(msg));
@@ -178,6 +180,28 @@ int main(int, char**)
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
         }
+
+        
+
+        ImGui::Begin("Color Pallete");
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        ImGui::InvisibleButton("rect", ImVec2(50, 50));
+        draw_list->AddRectFilled(pos, ImVec2( pos.x + 25, pos.y + 25), rectangleColor);
+        if (ImGui::IsItemHovered())
+        {
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+            {
+                rectangleColor = ImGui::GetColorU32(sliderColor);
+            }
+
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+            {
+                sliderColor = ImGui::ColorConvertU32ToFloat4(rectangleColor);
+            }
+        }
+
+        ImGui::End();
 
         // 3. Show another simple window.
         if (show_another_window)
