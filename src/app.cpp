@@ -9,6 +9,7 @@
 #include <dinput.h>
 #include <tchar.h>
 #include <vector>
+#include <array>
 
 // Data
 static ID3D11Device* g_pd3dDevice = NULL;
@@ -95,11 +96,18 @@ int main(int, char**)
     //IM_ASSERT(font != NULL);
 
     // Our state
-    bool show_demo_window = true;
-    bool show_another_window = false;
+    bool showViewportWindow = false;
+    bool showColorPalleteWindow = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     ImVec4 sliderColor = ImVec4(0.55f, 0.75f, 0.60f, 1.00f);
     ImVec4 viewPortBackgroundColor = ImVec4(0.55f, 0.75f, 0.60f, 1.00f);
+    struct Rect
+    {
+        ImVec2 pos;
+        ImU32 color;
+    };
+    static std::vector<Rect> palleteColorRectangles;
+    static float offset = 0;
 
     ImU32 rectangleColor = IM_COL32(255, 0, 0, 255);
 
@@ -138,7 +146,8 @@ int main(int, char**)
 
             //ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
             //ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            ImGui::Checkbox("ViewPort", &show_another_window);
+            ImGui::Checkbox("Viewport", &showViewportWindow);
+            ImGui::Checkbox("Color Pallete", &showColorPalleteWindow);
 
            /* ImGui::SliderFloat("float", &f, 0.0f, 1.0f);*/            // Edit 1 float using a slider from 0.0f to 1.0f
             //ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
@@ -181,34 +190,57 @@ int main(int, char**)
             ImGui::End();
         }
 
-        
+        //ImU32 rectangleColor = IM_COL32(255, 0, 0, 255);
 
-        ImGui::Begin("Color Pallete");
-        ImVec2 pos = ImGui::GetCursorScreenPos();
-        ImDrawList* draw_list = ImGui::GetWindowDrawList();
-        ImGui::InvisibleButton("rect", ImVec2(50, 50));
-        draw_list->AddRectFilled(pos, ImVec2( pos.x + 25, pos.y + 25), rectangleColor);
-        if (ImGui::IsItemHovered())
+       
+        //ImVec2 pos = ImGui::GetCursorScreenPos();
+        //ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        //if (ImGui::Button("Add Color"))
+        //{
+        //    static Rect rect;
+        //    rect.pos.x = 25 + offset;
+        //    rect.pos.y = 100;
+        //    rect.color = rectangleColor;
+        //    palleteColorRectangles.push_back(rect);
+        //    offset += 25;
+        //    //ImGui::InvisibleButton("rect", ImVec2(25+offset, 25));
+        //    //draw_list->AddRectFilled(pos, ImVec2(pos.x + 25, pos.y + 25), rectangleColor);
+        //}
+
+        //for (auto rectangle : palleteColorRectangles)
+        //{
+        //    //ImGui::InvisibleButton("rect", ImVec2(25 + offset, 25));
+        //    draw_list->AddRectFilled(ImVec2(0, 0), ImVec2(25, 25), rectangle.color);
+        //}
+
+        if (showColorPalleteWindow)
         {
-            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+            ImGui::Begin("Color Pallete");
+            ImVec2 pos = ImGui::GetCursorScreenPos();
+            ImDrawList* draw_list = ImGui::GetWindowDrawList();
+            ImGui::InvisibleButton("rect", ImVec2(25, 25));
+            draw_list->AddRectFilled(pos, ImVec2(pos.x + 25, pos.y + 25), rectangleColor);
+            if (ImGui::IsItemHovered())
             {
-                rectangleColor = ImGui::GetColorU32(sliderColor);
+                if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+                {
+                    rectangleColor = ImGui::GetColorU32(sliderColor);
+                }
+
+                if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                {
+                    sliderColor = ImGui::ColorConvertU32ToFloat4(rectangleColor);
+                }
             }
 
-            if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
-            {
-                sliderColor = ImGui::ColorConvertU32ToFloat4(rectangleColor);
-            }
+            ImGui::End();
         }
 
-        ImGui::End();
-
-        // 3. Show another simple window.
-        if (show_another_window)
+        if (showViewportWindow)
         {
 
             ImGui::PushStyleColor(ImGuiCol_WindowBg, viewPortBackgroundColor);
-            ImGui::Begin("Viewport", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+            ImGui::Begin("Viewport", &showViewportWindow);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
             // must be within begin to work at least this version
             if (ImGui::IsWindowHovered())
             {
@@ -221,7 +253,7 @@ int main(int, char**)
 
             ImGui::Text("Hello from viewport!");
             if (ImGui::Button("Close Me"))
-                show_another_window = false;
+                showViewportWindow = false;
             ImGui::End();
             ImGui::PopStyleColor();
         }
