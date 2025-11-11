@@ -10,6 +10,8 @@
 #include <tchar.h>
 #include <vector>
 #include <array>
+#include <string>
+#include <imgui_internal.h>
 
 // Data
 static ID3D11Device* g_pd3dDevice = NULL;
@@ -99,17 +101,19 @@ int main(int, char**)
     bool showViewportWindow = false;
     bool showColorPalleteWindow = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-    ImVec4 sliderColor = ImVec4(0.55f, 0.75f, 0.60f, 1.00f);
+    ImVec4 currentColor = ImVec4(0.55f, 0.75f, 0.60f, 1.00f);
     ImVec4 viewPortBackgroundColor = ImVec4(0.55f, 0.75f, 0.60f, 1.00f);
     struct Rect
     {
-        ImVec2 pos;
+        std::string name;
         ImU32 color;
+        float xOffset;
+        float yOffset;
     };
-    static std::vector<Rect> palleteColorRectangles;
-    static float offset = 0;
-
-    ImU32 rectangleColor = IM_COL32(255, 0, 0, 255);
+    std::vector<Rect> palleteColorRectangles;
+    float xOffset = 0;
+    float yOffset = 25;
+    int nameCounter = 0;
 
     // Main loop
     MSG msg;
@@ -154,7 +158,7 @@ int main(int, char**)
             //ImGui::ColorEdit3("ViewPortBackgroundColor", (float*)&sliderColor); // Edit 3 floats representing a color
             //ImGui::ColorPicker4("Pick Color", (float*)&sliderColor);
             ImGui::PushItemWidth(300);
-            ImGui::ColorPicker4("Viewport Color", (float*)&sliderColor);
+            ImGui::ColorPicker4("Current Color", (float*)&currentColor);
             ImGui::PopItemWidth();
 
             ImGui::Text("SomeText");
@@ -190,36 +194,61 @@ int main(int, char**)
             ImGui::End();
         }
 
-        //ImU32 rectangleColor = IM_COL32(255, 0, 0, 255);
-
-       
-        //ImVec2 pos = ImGui::GetCursorScreenPos();
-        //ImDrawList* draw_list = ImGui::GetWindowDrawList();
-        //if (ImGui::Button("Add Color"))
-        //{
-        //    static Rect rect;
-        //    rect.pos.x = 25 + offset;
-        //    rect.pos.y = 100;
-        //    rect.color = rectangleColor;
-        //    palleteColorRectangles.push_back(rect);
-        //    offset += 25;
-        //    //ImGui::InvisibleButton("rect", ImVec2(25+offset, 25));
-        //    //draw_list->AddRectFilled(pos, ImVec2(pos.x + 25, pos.y + 25), rectangleColor);
-        //}
-
-        //for (auto rectangle : palleteColorRectangles)
-        //{
-        //    //ImGui::InvisibleButton("rect", ImVec2(25 + offset, 25));
-        //    draw_list->AddRectFilled(ImVec2(0, 0), ImVec2(25, 25), rectangle.color);
-        //}
-
         if (showColorPalleteWindow)
+        {
+            ImGui::Begin("Color Pallete");
+            
+            ImVec2 pos = ImGui::GetCursorScreenPos();
+            ImDrawList* draw_list = ImGui::GetWindowDrawList();
+            if (ImGui::Button("Add Color"))
+            {
+                if (xOffset == 250)
+                {
+                    xOffset = 0;
+                    yOffset += 25;
+                }
+                Rect rect;
+                rect.name = "color" + std::to_string(nameCounter);
+                rect.xOffset = xOffset;
+                rect.yOffset = yOffset;
+                rect.color = ImGui::GetColorU32(currentColor);
+                palleteColorRectangles.push_back(rect);
+                xOffset += 25;
+                nameCounter++;
+                //ImGui::InvisibleButton("rect", ImVec2(25+offset, 25));
+                //draw_list->AddRectFilled(pos, ImVec2(pos.x + 25, pos.y + 25), rectangleColor);
+            }
+
+            for (auto& rectangle : palleteColorRectangles)
+            {
+                ImGui::SetCursorScreenPos({pos.x + rectangle.xOffset, pos.y + rectangle.yOffset });
+                ImGui::InvisibleButton(rectangle.name.c_str(), ImVec2(25, 25));
+                if (ImGui::IsItemHovered())
+                {
+                    if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+                    {
+                        rectangle.color = ImGui::GetColorU32(currentColor);
+                    }
+
+                    if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                    {
+                        currentColor = ImGui::ColorConvertU32ToFloat4(rectangle.color);
+                    }
+                }
+                draw_list->AddRectFilled({ pos.x + rectangle.xOffset, pos.y + rectangle.yOffset }, ImVec2(pos.x + rectangle.xOffset + 25, pos.y + 25 + rectangle.yOffset), rectangle.color);
+            }
+
+            ImGui::End();
+        }
+
+
+       /* if (showColorPalleteWindow)
         {
             ImGui::Begin("Color Pallete");
             ImVec2 pos = ImGui::GetCursorScreenPos();
             ImDrawList* draw_list = ImGui::GetWindowDrawList();
             ImGui::InvisibleButton("rect", ImVec2(25, 25));
-            draw_list->AddRectFilled(pos, ImVec2(pos.x + 25, pos.y + 25), rectangleColor);
+            draw_list->AddRectFilled({pos.x+offset, pos.y}, ImVec2(pos.x + 25 + offset, pos.y + 25), rectangleColor);
             if (ImGui::IsItemHovered())
             {
                 if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
@@ -234,7 +263,7 @@ int main(int, char**)
             }
 
             ImGui::End();
-        }
+        }*/
 
         if (showViewportWindow)
         {
@@ -247,7 +276,7 @@ int main(int, char**)
                 //ImGui::Text("Window Hovered!");
                 if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                 {
-                    viewPortBackgroundColor = sliderColor;
+                    viewPortBackgroundColor = currentColor;
                 }
             }
 
