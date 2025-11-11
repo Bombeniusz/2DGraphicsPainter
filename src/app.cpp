@@ -2,16 +2,16 @@
 // If you are new to dear imgui, see examples/README.txt and documentation at the top of imgui.cpp.
 
 #include "imgui.h"
+#include <imgui_internal.h>
 #include "examples/imgui_impl_win32.h"
 #include "examples/imgui_impl_dx11.h"
 #include <d3d11.h>
 #define DIRECTINPUT_VERSION 0x0800
+#define NEW_ROW 250
 #include <dinput.h>
 #include <tchar.h>
 #include <vector>
-#include <array>
 #include <string>
-#include <imgui_internal.h>
 
 // Data
 static ID3D11Device* g_pd3dDevice = NULL;
@@ -97,12 +97,15 @@ int main(int, char**)
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
     //IM_ASSERT(font != NULL);
 
-    // Our state
+    // Our states
     bool showViewportWindow = false;
     bool showColorPalleteWindow = false;
+    bool showCanvasWindow = false;
+    bool drawPixelGrid = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     ImVec4 currentColor = ImVec4(0.55f, 0.75f, 0.60f, 1.00f);
     ImVec4 viewPortBackgroundColor = ImVec4(0.55f, 0.75f, 0.60f, 1.00f);
+    ImU32 pixelgGridColor = IM_COL32(80, 80, 80, 255);
     struct Rect
     {
         std::string name;
@@ -137,14 +140,7 @@ int main(int, char**)
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-        //if (show_demo_window)
-            //ImGui::ShowDemoWindow(&show_demo_window);
-
-        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
         {
-            //static float f = 0.0f;
-            //static int counter = 0;
 
             ImGui::Begin("Colors");                          // Create a window called "Hello, world!" and append into it.
 
@@ -152,6 +148,7 @@ int main(int, char**)
             //ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
             ImGui::Checkbox("Viewport", &showViewportWindow);
             ImGui::Checkbox("Color Pallete", &showColorPalleteWindow);
+            ImGui::Checkbox("Canvas", &showCanvasWindow);
 
            /* ImGui::SliderFloat("float", &f, 0.0f, 1.0f);*/            // Edit 1 float using a slider from 0.0f to 1.0f
             //ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
@@ -162,35 +159,55 @@ int main(int, char**)
             ImGui::PopItemWidth();
 
             ImGui::Text("SomeText");
-            /*if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-            {
-
-
-                if (ImGui::IsItemHovered())
-                {
-                    viewPortBackgroundColor = sliderColor;
-                }
-
-                if (ImGui::IsWindowHovered())
-                {
-                    viewPortBackgroundColor = sliderColor;
-                }
-            }*/
-
-            //ImGui::PushStyleColor(ImGuiCol_WindowBg, viewPortBackgroundColor);
-
-            //ImGui::Begin("Custom Background Window");
-
-            //ImGui::End();
-
-            //ImGui::PopStyleColor();
-
-            //if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-            //    counter++;
-            //ImGui::SameLine();
-            //ImGui::Text("counter = %d", counter);
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+            ImGui::End();
+        }
+
+        if (showCanvasWindow)
+        {
+            ImGui::SetNextWindowSize(ImVec2(540, 600));
+            ImGui::Begin("Canvas");
+            ImGui::Checkbox("PixelGrid", &drawPixelGrid);
+            ImVec2 pos = ImGui::GetCursorScreenPos();
+            ImDrawList* drawList = ImGui::GetWindowDrawList();
+            drawList->AddRectFilled(ImVec2(pos.x, pos.y), ImVec2(pos.x + 20.0f, pos.y + 20.0f), pixelgGridColor);
+            ImGui::InvisibleButton("PixelGridButton", ImVec2(20.0f, 20.0f));
+            if (ImGui::IsItemHovered())
+            {
+                if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+                {
+                    pixelgGridColor = ImGui::GetColorU32(currentColor);
+                }
+
+                if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                {
+                    currentColor = ImGui::ColorConvertU32ToFloat4(pixelgGridColor);
+                }
+            }
+            ImVec2 windowCursorTopLeftScreenPos = ImGui::GetCursorScreenPos();
+            ImVec2 canvasSize = ImVec2(512, 512);
+            ImVec2 windowPos = ImGui::GetWindowPos();
+            float offset = 16.0f;
+
+            if (drawPixelGrid)
+            {
+                for (float x = 0.0f; x <= canvasSize.x; x += offset)
+                {
+                    drawList->AddLine(ImVec2(windowCursorTopLeftScreenPos.x + x, windowCursorTopLeftScreenPos.y),
+                        ImVec2(windowCursorTopLeftScreenPos.x + x, windowCursorTopLeftScreenPos.y + canvasSize.y),
+                        pixelgGridColor, 1.0f);
+                }
+
+                for (float y = 0.0f; y <= canvasSize.y; y += offset)
+                {
+                    drawList->AddLine(ImVec2(windowCursorTopLeftScreenPos.x, windowCursorTopLeftScreenPos.y + y),
+                        ImVec2(windowCursorTopLeftScreenPos.x + canvasSize.x, windowCursorTopLeftScreenPos.y + y),
+                        pixelgGridColor, 1.0f);
+                }
+                ImGui::InvisibleButton("Canvas", canvasSize);
+            }
+
             ImGui::End();
         }
 
@@ -199,10 +216,10 @@ int main(int, char**)
             ImGui::Begin("Color Pallete");
             
             ImVec2 pos = ImGui::GetCursorScreenPos();
-            ImDrawList* draw_list = ImGui::GetWindowDrawList();
+            ImDrawList* drawList = ImGui::GetWindowDrawList();
             if (ImGui::Button("Add Color"))
             {
-                if (xOffset == 250)
+                if (xOffset == NEW_ROW)
                 {
                     xOffset = 0;
                     yOffset += 25;
@@ -215,8 +232,6 @@ int main(int, char**)
                 palleteColorRectangles.push_back(rect);
                 xOffset += 25;
                 nameCounter++;
-                //ImGui::InvisibleButton("rect", ImVec2(25+offset, 25));
-                //draw_list->AddRectFilled(pos, ImVec2(pos.x + 25, pos.y + 25), rectangleColor);
             }
 
             for (auto& rectangle : palleteColorRectangles)
@@ -235,35 +250,11 @@ int main(int, char**)
                         currentColor = ImGui::ColorConvertU32ToFloat4(rectangle.color);
                     }
                 }
-                draw_list->AddRectFilled({ pos.x + rectangle.xOffset, pos.y + rectangle.yOffset }, ImVec2(pos.x + rectangle.xOffset + 25, pos.y + 25 + rectangle.yOffset), rectangle.color);
+                drawList->AddRectFilled(ImVec2( pos.x + rectangle.xOffset, pos.y + rectangle.yOffset), ImVec2(pos.x + rectangle.xOffset + 25, pos.y + 25 + rectangle.yOffset), rectangle.color);
             }
 
             ImGui::End();
         }
-
-
-       /* if (showColorPalleteWindow)
-        {
-            ImGui::Begin("Color Pallete");
-            ImVec2 pos = ImGui::GetCursorScreenPos();
-            ImDrawList* draw_list = ImGui::GetWindowDrawList();
-            ImGui::InvisibleButton("rect", ImVec2(25, 25));
-            draw_list->AddRectFilled({pos.x+offset, pos.y}, ImVec2(pos.x + 25 + offset, pos.y + 25), rectangleColor);
-            if (ImGui::IsItemHovered())
-            {
-                if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-                {
-                    rectangleColor = ImGui::GetColorU32(sliderColor);
-                }
-
-                if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
-                {
-                    sliderColor = ImGui::ColorConvertU32ToFloat4(rectangleColor);
-                }
-            }
-
-            ImGui::End();
-        }*/
 
         if (showViewportWindow)
         {
@@ -273,7 +264,6 @@ int main(int, char**)
             // must be within begin to work at least this version
             if (ImGui::IsWindowHovered())
             {
-                //ImGui::Text("Window Hovered!");
                 if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                 {
                     viewPortBackgroundColor = currentColor;
