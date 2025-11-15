@@ -108,14 +108,18 @@ int main(int, char**)
     ImU32 pixelgGridColor = IM_COL32(80, 80, 80, 255);
     struct Rect
     {
+        float xPos;
+        float yPos;
         std::string name;
         ImU32 color;
         float xOffset;
         float yOffset;
     };
     std::vector<Rect> palleteColorRectangles;
+    std::vector<Rect> viewportRectangles;
     float xOffset = 0;
     float yOffset = 25;
+    float offset = 25.0f;
     int nameCounter = 0;
 
     // Main loop
@@ -158,8 +162,6 @@ int main(int, char**)
             ImGui::ColorPicker4("Current Color", (float*)&currentColor);
             ImGui::PopItemWidth();
 
-            ImGui::Text("SomeText");
-
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
         }
@@ -167,7 +169,7 @@ int main(int, char**)
         if (showCanvasWindow)
         {
             ImGui::SetNextWindowSize(ImVec2(540, 600));
-            ImGui::Begin("Canvas");
+            ImGui::Begin("Canvas", &showCanvasWindow);
             ImGui::Checkbox("PixelGrid", &drawPixelGrid);
             ImVec2 pos = ImGui::GetCursorScreenPos();
             ImDrawList* drawList = ImGui::GetWindowDrawList();
@@ -213,7 +215,7 @@ int main(int, char**)
 
         if (showColorPalleteWindow)
         {
-            ImGui::Begin("Color Pallete");
+            ImGui::Begin("Color Pallete", &showColorPalleteWindow);
             
             ImVec2 pos = ImGui::GetCursorScreenPos();
             ImDrawList* drawList = ImGui::GetWindowDrawList();
@@ -250,7 +252,7 @@ int main(int, char**)
                         currentColor = ImGui::ColorConvertU32ToFloat4(rectangle.color);
                     }
                 }
-                drawList->AddRectFilled(ImVec2( pos.x + rectangle.xOffset, pos.y + rectangle.yOffset), ImVec2(pos.x + rectangle.xOffset + 25, pos.y + 25 + rectangle.yOffset), rectangle.color);
+                drawList->AddRectFilled(ImVec2(pos.x + rectangle.xOffset, pos.y + rectangle.yOffset), ImVec2(pos.x + rectangle.xOffset + 25, pos.y + 25 + rectangle.yOffset), rectangle.color);
             }
 
             ImGui::End();
@@ -258,23 +260,34 @@ int main(int, char**)
 
         if (showViewportWindow)
         {
-
-            ImGui::PushStyleColor(ImGuiCol_WindowBg, viewPortBackgroundColor);
-            ImGui::Begin("Viewport", &showViewportWindow);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            // must be within begin to work at least this version
+            //ImGui::PushStyleColor(ImGuiCol_WindowBg, viewPortBackgroundColor);
+            ImGui::Begin("Viewport", &showViewportWindow);
+            ImGui::SliderFloat("Rectangle size", &offset, 25.0f, 200.0f);
+            ImDrawList* drawList = ImGui::GetWindowDrawList();
+            ImVec2 mousePos = ImGui::GetMousePos();
+            ImU32 color = ImGui::GetColorU32(currentColor);;
+            ImVec2 contentPos = ImGui::GetCursorScreenPos();
             if (ImGui::IsWindowHovered())
             {
-                if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+                if (ImGui::IsMouseDown(ImGuiMouseButton_Right))
                 {
-                    viewPortBackgroundColor = currentColor;
+                    viewportRectangles.push_back({ mousePos.x - contentPos.x - offset/2, mousePos.y - contentPos.y - offset/2, "rect", color, offset, offset });
                 }
             }
 
-            ImGui::Text("Hello from viewport!");
-            if (ImGui::Button("Close Me"))
-                showViewportWindow = false;
+
+            for (auto& r : viewportRectangles)
+            {
+                ImVec2 rectMin(contentPos.x + r.xPos, contentPos.y + r.yPos);
+                ImVec2 rectMax(rectMin.x + r.xOffset, rectMin.y + r.yOffset);
+                drawList->AddRectFilled(rectMin, rectMax, r.color);
+            }
+
+            //ImGui::Text("Hello from viewport!");
+            /*if (ImGui::Button("Close Me"))
+                showViewportWindow = false;*/
             ImGui::End();
-            ImGui::PopStyleColor();
+            //ImGui::PopStyleColor();
         }
 
         // Rendering
