@@ -262,7 +262,7 @@ int main(int, char**)
         {
             //ImGui::PushStyleColor(ImGuiCol_WindowBg, viewPortBackgroundColor);
             ImGui::Begin("Viewport", &showViewportWindow);
-            ImGui::SliderFloat("Rectangle size", &offset, 25.0f, 200.0f);
+            ImGui::SliderFloat("Rectangle size", &offset, 1.0f, 100.0f);
             ImDrawList* drawList = ImGui::GetWindowDrawList();
             ImVec2 mousePos = ImGui::GetMousePos();
             ImU32 color = ImGui::GetColorU32(currentColor);;
@@ -275,6 +275,13 @@ int main(int, char**)
                 }
             }
 
+            if (ImGui::Button("Clear"))
+            {
+                while (!viewportRectangles.empty())
+                {
+                    viewportRectangles.pop_back();
+                }
+            }
 
             for (auto& r : viewportRectangles)
             {
