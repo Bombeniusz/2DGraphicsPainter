@@ -103,6 +103,8 @@ int main(int, char**)
     bool showCanvasWindow = false;
     bool drawPixelGrid = false;
     bool showLayerWindow = false;
+    bool rectangleTool = true;
+    bool circleTool = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     ImVec4 currentColor = ImVec4(0.55f, 0.75f, 0.60f, 1.00f);
     ImVec4 viewPortBackgroundColor = ImVec4(0.55f, 0.75f, 0.60f, 1.00f);
@@ -116,11 +118,20 @@ int main(int, char**)
         float xOffset;
         float yOffset;
     };
+    struct Circle
+    {
+        float xPos;
+        float yPos;
+        float radius;
+        ImU32 color;
+    };
     std::vector<Rect> palleteColorRectangles;
     std::vector<Rect> viewportRectangles;
+    std::vector<Circle> viewportCircles;
     float xOffset = 0;
     float yOffset = 25;
     float offset = 25.0f;
+    float radius = 12.5f;
     int nameCounter = 0;
 
     // Main loop
@@ -264,7 +275,16 @@ int main(int, char**)
             //ImGui::PushStyleColor(ImGuiCol_WindowBg, viewPortBackgroundColor);
             ImGui::Begin("Viewport", &showViewportWindow);
             ImGui::SliderFloat("Rectangle size", &offset, 1.0f, 100.0f);
+            ImGui::SliderFloat("Cricle Radius size", &radius, 1.0f, 100.0f);
             ImGui::Checkbox("Layer Window", &showLayerWindow);
+            if (ImGui::Checkbox("Rectangle", &rectangleTool))
+            {
+                circleTool = false;
+            }
+            if (ImGui::Checkbox("Circle", &circleTool))
+            {
+                rectangleTool = false;
+            }
             ImDrawList* drawList = ImGui::GetWindowDrawList();
             ImVec2 mousePos = ImGui::GetMousePos();
             ImU32 color = ImGui::GetColorU32(currentColor);
@@ -273,7 +293,10 @@ int main(int, char**)
             {
                 if (ImGui::IsMouseDown(ImGuiMouseButton_Right))
                 {
-                    viewportRectangles.push_back({ mousePos.x - contentPos.x - offset/2, mousePos.y - contentPos.y - offset/2, "rect", color, offset, offset });
+                    if (rectangleTool)
+                        viewportRectangles.push_back({ mousePos.x - contentPos.x - offset / 2, mousePos.y - contentPos.y - offset / 2, "rect", color, offset, offset });
+                    else if (circleTool)
+                        viewportCircles.push_back({mousePos.x - contentPos.x, mousePos.y - contentPos.y, radius, color});
                 }
             }
 
@@ -283,6 +306,11 @@ int main(int, char**)
                 {
                     viewportRectangles.pop_back();
                 }
+
+                while (!viewportCircles.empty())
+                {
+                    viewportCircles.pop_back();
+                }
             }
 
             for (auto& r : viewportRectangles)
@@ -290,6 +318,14 @@ int main(int, char**)
                 ImVec2 rectMin(contentPos.x + r.xPos, contentPos.y + r.yPos);
                 ImVec2 rectMax(rectMin.x + r.xOffset, rectMin.y + r.yOffset);
                 drawList->AddRectFilled(rectMin, rectMax, r.color);
+            }
+
+            for (auto& c : viewportCircles)
+            {
+                /*ImVec2 rectMin(contentPos.x + r.xPos, contentPos.y + r.yPos);
+                ImVec2 rectMax(rectMin.x + r.xOffset, rectMin.y + r.yOffset);*/
+                ImVec2 center(contentPos.x + c.xPos, contentPos.y + c.yPos);
+                drawList->AddCircleFilled(center, c.radius, c.color);
             }
 
             //ImGui::Text("Hello from viewport!");
