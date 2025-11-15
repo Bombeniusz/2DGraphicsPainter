@@ -102,6 +102,7 @@ int main(int, char**)
     bool showColorPalleteWindow = false;
     bool showCanvasWindow = false;
     bool drawPixelGrid = false;
+    bool showLayerWindow = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     ImVec4 currentColor = ImVec4(0.55f, 0.75f, 0.60f, 1.00f);
     ImVec4 viewPortBackgroundColor = ImVec4(0.55f, 0.75f, 0.60f, 1.00f);
@@ -263,9 +264,10 @@ int main(int, char**)
             //ImGui::PushStyleColor(ImGuiCol_WindowBg, viewPortBackgroundColor);
             ImGui::Begin("Viewport", &showViewportWindow);
             ImGui::SliderFloat("Rectangle size", &offset, 1.0f, 100.0f);
+            ImGui::Checkbox("Layer Window", &showLayerWindow);
             ImDrawList* drawList = ImGui::GetWindowDrawList();
             ImVec2 mousePos = ImGui::GetMousePos();
-            ImU32 color = ImGui::GetColorU32(currentColor);;
+            ImU32 color = ImGui::GetColorU32(currentColor);
             ImVec2 contentPos = ImGui::GetCursorScreenPos();
             if (ImGui::IsWindowHovered())
             {
@@ -295,6 +297,13 @@ int main(int, char**)
                 showViewportWindow = false;*/
             ImGui::End();
             //ImGui::PopStyleColor();
+        }
+
+        if (showLayerWindow)
+        {
+            ImGui::SetNextWindowSize(ImVec2(150, 200));
+            ImGui::Begin("Layer Window", &showLayerWindow);
+            ImGui::End();
         }
 
         // Rendering
